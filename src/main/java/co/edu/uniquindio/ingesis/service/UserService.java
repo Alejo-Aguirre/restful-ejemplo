@@ -1,10 +1,12 @@
 package co.edu.uniquindio.ingesis.service;
 
+import co.edu.uniquindio.ingesis.dto.UserRegistrationRequest;
 import co.edu.uniquindio.ingesis.model.User;
-import co.edu.uniquindio.ingesis.model.TokenResponse;
 import co.edu.uniquindio.ingesis.repository.UserRepository;
+import co.edu.uniquindio.ingesis.security.JWTUtil;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import org.mindrot.jbcrypt.BCrypt;
 
 import java.util.List;
 import java.util.Optional;
@@ -15,15 +17,21 @@ public class UserService {
     @Inject
     UserRepository userRepository;
 
-    public User registerUser(User user) {
-        if (user.getEmail() == null || user.getClave() == null || user.getUsuario() == null) {
+    public User registerUser(UserRegistrationRequest request) {
+        if (request.email() == null || request.clave() == null || request.nombreUsuario() == null) {
             throw new IllegalArgumentException("Todos los campos son obligatorios.");
         }
 
-        Optional<User> existingUser = userRepository.findByEmail(user.getEmail());
+        Optional<User> existingUser = userRepository.findByEmail(request.email());
         if (existingUser.isPresent()) {
             throw new IllegalArgumentException("El email ya está registrado.");
         }
+
+        User user = new User();
+        user.setEmail(request.email());
+        user.setClave(hashPassword(request.clave())); // Hashear la contraseña
+        user.setUsuario(request.nombreUsuario());
+        user.setRol(request.rol()); // Asignar el rol proporcionado (o USER por defecto)
 
         return userRepository.save(user);
     }
@@ -54,7 +62,8 @@ public class UserService {
         User updatedUser = existingUser.get();
         updatedUser.setUsuario(user.getUsuario());
         updatedUser.setEmail(user.getEmail());
-        updatedUser.setClave(user.getClave());
+        updatedUser.setClave(hashPassword(user.getClave())); // Hashear la nueva contraseña
+        updatedUser.setRol(user.getRol());
 
         return updatedUser;
     }
@@ -68,7 +77,8 @@ public class UserService {
         User updatedUser = existingUser.get();
         if (user.getUsuario() != null) updatedUser.setUsuario(user.getUsuario());
         if (user.getEmail() != null) updatedUser.setEmail(user.getEmail());
-        if (user.getClave() != null) updatedUser.setClave(user.getClave());
+        if (user.getClave() != null) updatedUser.setClave(hashPassword(user.getClave())); // Hashear la nueva contraseña
+        if (user.getRol() != null) updatedUser.setRol(user.getRol());
 
         return updatedUser;
     }
@@ -85,13 +95,13 @@ public class UserService {
 
     public String login(String email, String clave) {
         Optional<User> user = userRepository.findByEmail(email);
-        if (user.isPresent() && user.get().getClave().equals(clave)) {
-            return generateToken(user.get()); // Simulación de un token
+        if (user.isPresent() && BCrypt.checkpw(clave, user.get().getClave())) {
+            return JWTUtil.generateToken(user.get().getEmail(), user.get().getRol().name()); // Generar token JWT con rol
         }
         return null;
     }
 
-    private String generateToken(User user) {
-        return "TOKEN_" + user.getId(); // Simulación de un token JWT
+    private String hashPassword(String password) {
+        return BCrypt.hashpw(password, BCrypt.gensalt()); // Hashear la contraseña
     }
 }

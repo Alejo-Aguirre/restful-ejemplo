@@ -1,5 +1,6 @@
 package co.edu.uniquindio.ingesis.controller;
 
+import co.edu.uniquindio.ingesis.dto.UserRegistrationRequest;
 import co.edu.uniquindio.ingesis.model.TokenResponse;
 import co.edu.uniquindio.ingesis.model.User;
 import co.edu.uniquindio.ingesis.model.UserLoginRequest;
@@ -7,6 +8,7 @@ import co.edu.uniquindio.ingesis.security.JWTUtil;
 import co.edu.uniquindio.ingesis.service.UserService;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
+import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -16,22 +18,18 @@ import org.eclipse.microprofile.openapi.annotations.extensions.Extension;
 import org.eclipse.microprofile.openapi.annotations.info.Contact;
 import org.eclipse.microprofile.openapi.annotations.info.Info;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
+import org.eclipse.microprofile.openapi.annotations.media.ExampleObject;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
 import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
+import org.eclipse.microprofile.openapi.annotations.security.SecurityScheme;
+import org.eclipse.microprofile.openapi.annotations.enums.SecuritySchemeType;
 
 import java.util.List;
 
-import org.eclipse.microprofile.openapi.annotations.security.SecurityScheme;
-import org.eclipse.microprofile.openapi.annotations.security.SecuritySchemes;
-import org.eclipse.microprofile.openapi.annotations.enums.SecuritySchemeType;
-
-
-
-// manejo del authorize
 @SecurityScheme(
         securitySchemeName = "jwtAuth",
         type = SecuritySchemeType.HTTP,
@@ -41,7 +39,7 @@ import org.eclipse.microprofile.openapi.annotations.enums.SecuritySchemeType;
 @Path("/usuarios")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-@Tag(name = "Gestión de Usuarios", description = "API para gestionar usuarios, incluyendo registro, login, actualización completa y parcial, eliminacion y inicio de sesion para seguridad.")
+@Tag(name = "Gestión de Usuarios", description = "API para gestionar usuarios, incluyendo registro, login, actualización completa y parcial, eliminación y inicio de sesión para seguridad.")
 public class UserController {
 
     @Inject
@@ -54,27 +52,29 @@ public class UserController {
     @APIResponse(responseCode = "409", description = "Email o nombre de usuario ya registrado")
     @APIResponse(responseCode = "500", description = "Error en el servidor")
     public Response registerUser(
-            @RequestBody(
+            @Valid @RequestBody(
                     description = "Datos del usuario a registrar",
                     required = true,
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(
-                                    example = """
-                {
-                  "id": 1,
-                  "usuario": "john",
-                  "email": "john@example.com",
-                  "clave": "password123"
-                }
-                """
+                            schema = @Schema(implementation = UserRegistrationRequest.class),
+                            examples = @ExampleObject(
+                                    name = "Ejemplo de Registro",
+                                    summary = "Ejemplo de entrada para registrar un usuario",
+                                    description = "Este es un ejemplo de cómo enviar los datos para registrar un usuario.",
+                                    value = """
+                                        {
+                                            "email": "usuario@example.com",
+                                            "clave": "Password123",
+                                            "nombreUsuario": "usuarioEjemplo",
+                                            "rol": "ADMIN"
+                                        }
+                                        """
                             )
                     )
-            )
-            User user) {
-
+            ) UserRegistrationRequest request) {
         try {
-            User registeredUser = userService.registerUser(user);
+            User registeredUser = userService.registerUser(request);
             return Response.status(Response.Status.CREATED).entity(registeredUser).build();
         } catch (IllegalArgumentException e) {
             return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
@@ -82,6 +82,7 @@ public class UserController {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Error en el servidor").build();
         }
     }
+
 
     @GET
     @SecurityRequirement(name = "jwtAuth") // Requiere autenticación con JWT
@@ -134,7 +135,7 @@ public class UserController {
     @APIResponse(responseCode = "500", description = "Error en el servidor")
     public Response updateUser(
             @PathParam("id") int id,
-            User user) {
+            @Valid User user) { // Usa @Valid para validar automáticamente el objeto User
         try {
             User updatedUser = userService.updateUser(id, user);
             if (updatedUser == null) {
@@ -172,7 +173,6 @@ public class UserController {
         }
     }
 
-
     @DELETE
     @Path("/{id}")
     @SecurityRequirement(name = "jwtAuth") // Requiere autenticación con JWT
@@ -195,31 +195,29 @@ public class UserController {
     @POST
     @Path("/login")
     @Tag(name = "Login")
-    @Operation(summary = "Iniciar sesion", description = "inicia sesion y genera el token para acceder los demas endpoints")
+    @Operation(summary = "Iniciar sesión", description = "Inicia sesión y genera el token para acceder a los demás endpoints.")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response login(UserLoginRequest loginRequest) {
+    public Response login(@Valid UserLoginRequest loginRequest) {
         try {
+            // Validar que los campos no estén vacíos
             if (loginRequest == null || loginRequest.getEmail() == null || loginRequest.getClave() == null) {
                 return Response.status(Response.Status.BAD_REQUEST).entity("Solicitud inválida, faltan datos").build();
             }
 
-            System.out.println("Intentando login para: " + loginRequest.getEmail());
-
-            String token = userService.login(loginRequest.getEmail(), loginRequest.getClave());
-            if (token == null) {
+            // Autenticar al usuario y obtener su rol
+            String rol = userService.login(loginRequest.getEmail(), loginRequest.getClave());
+            if (rol == null) {
                 return Response.status(Response.Status.UNAUTHORIZED).entity("Credenciales incorrectas").build();
             }
 
-            String jwtToken = JWTUtil.generateToken(loginRequest.getEmail()); // Generar token JWT
+            // Generar el token JWT con el email y el rol del usuario
+            String jwtToken = JWTUtil.generateToken(loginRequest.getEmail(), rol);
 
+            // Devolver el token en la respuesta
             return Response.ok().entity(new TokenResponse(jwtToken)).build();
         } catch (Exception e) {
-            e.printStackTrace();
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Error en el servidor").build();
         }
     }
-
-
-
 }

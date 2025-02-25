@@ -1,5 +1,6 @@
 package co.edu.uniquindio.ingesis.security;
 
+import io.jsonwebtoken.Claims;
 import jakarta.annotation.Priority;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerRequestFilter;
@@ -39,12 +40,17 @@ public class JWTAuthFilter implements ContainerRequestFilter {
         String token = authorizationHeader.substring("Bearer ".length());
 
         try {
-            String userEmail = JWTUtil.validateToken(token); // Validación del token
+            Claims claims = JWTUtil.validateToken(token); // Obtiene las reclamaciones (claims) del token
+            String userEmail = claims.getSubject(); // El subject es el email
+            String userRole = claims.get("rol", String.class); // Extrae el rol del token
+
             final SecurityContext currentSecurityContext = requestContext.getSecurityContext();
-            requestContext.setSecurityContext(new AuthSecurityContext(userEmail, currentSecurityContext.isSecure()));
+            requestContext.setSecurityContext(new AuthSecurityContext(userEmail, userRole, currentSecurityContext.isSecure()));
+
         } catch (Exception e) {
             requestContext.abortWith(Response.status(Response.Status.UNAUTHORIZED)
                     .entity("Acceso denegado: Token inválido o expirado").build());
         }
+
     }
 }

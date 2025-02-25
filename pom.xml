@@ -84,6 +84,12 @@
             <version>0.11.5</version>
             <scope>runtime</scope>
         </dependency>
+
+        <dependency>
+            <groupId>org.mindrot</groupId>
+            <artifactId>jbcrypt</artifactId>
+            <version>0.4</version>
+        </dependency>
         <!-- Dependencia de Lombok -->
         <dependency>
             <groupId>org.projectlombok</groupId>

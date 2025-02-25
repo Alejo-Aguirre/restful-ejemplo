@@ -3,12 +3,16 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 
-@Data // Genera getters, setters, toString, equals, hashCode
-@NoArgsConstructor // Constructor sin argumentos
-@AllArgsConstructor // Constructor con todos los argumentos
+
+import co.edu.uniquindio.ingesis.domain.Rol;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class User {
         private Integer id;
         private String usuario;
         private String email;
         private String clave;
+        private Rol rol; // Campo para el rol del usuario
 }

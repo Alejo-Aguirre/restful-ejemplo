@@ -1,30 +1,33 @@
 package co.edu.uniquindio.ingesis.security;
 
-import java.security.Principal;
 import jakarta.ws.rs.core.SecurityContext;
+import java.security.Principal;
 
 public class AuthSecurityContext implements SecurityContext {
-    private final String userEmail;
-    private final boolean isSecure;
 
-    public AuthSecurityContext(String userEmail, boolean isSecure) {
+    private final String userEmail;
+    private final String userRole;
+    private final boolean secure;
+
+    public AuthSecurityContext(String userEmail, String userRole, boolean secure) {
         this.userEmail = userEmail;
-        this.isSecure = isSecure;
+        this.userRole = userRole;
+        this.secure = secure;
     }
 
     @Override
     public Principal getUserPrincipal() {
-        return () -> userEmail; // Retorna el usuario autenticado
+        return () -> userEmail; // Devuelve el email como identificación
     }
 
     @Override
     public boolean isUserInRole(String role) {
-        return false; // Aquí podrías manejar roles si los tienes
+        return userRole.equals(role); // Compara el rol del usuario con el rol solicitado
     }
 
     @Override
     public boolean isSecure() {
-        return isSecure;
+        return secure;
     }
 
     @Override

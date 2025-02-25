@@ -3,33 +3,49 @@ package co.edu.uniquindio.ingesis.security;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.security.Keys;
+
+import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 
-import io.jsonwebtoken.security.Keys;
-import java.nio.charset.StandardCharsets;
-import javax.crypto.SecretKey;
-
 public class JWTUtil {
-    private static final String SECRET_KEY = "secreto_super_seguro_secreto_super_seguro"; // Debe ser >= 256 bits
-    private static final long EXPIRATION_TIME = 86400000; // 1 día
 
+    // Clave secreta para firmar el token (debe ser >= 256 bits)
+    private static final String SECRET_KEY = "secreto_super_seguro_secreto_super_seguro_1234567890";
+    private static final long EXPIRATION_TIME = 86400000; // 1 día en milisegundos
+
+    // Convertir la clave secreta en un SecretKey
     private static final SecretKey KEY = Keys.hmacShaKeyFor(SECRET_KEY.getBytes(StandardCharsets.UTF_8));
 
-    public static String generateToken(String email) {
+    /**
+     * Genera un token JWT con el email y el rol del usuario.
+     *
+     * @param email El email del usuario.
+     * @param rol   El rol del usuario.
+     * @return El token JWT generado.
+     */
+    public static String generateToken(String email, String rol) {
         return Jwts.builder()
-                .setSubject(email)
-                .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
-                .signWith(KEY, SignatureAlgorithm.HS256)
-                .compact();
+                .setSubject(email) // Sujeto del token (email del usuario)
+                .claim("rol", rol) // Incluir el rol como una reclamación (claim)
+                .setIssuedAt(new Date()) // Fecha de emisión del token
+                .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME)) // Fecha de expiración
+                .signWith(KEY, SignatureAlgorithm.HS256) // Firmar el token con la clave secreta
+                .compact(); // Generar el token como una cadena compacta
     }
 
-    public static String validateToken(String token) {
-        Claims claims = Jwts.parserBuilder()
-                .setSigningKey(KEY)
+    /**
+     * Valida un token JWT y devuelve las reclamaciones (claims).
+     *
+     * @param token El token JWT a validar.
+     * @return Las reclamaciones (claims) del token.
+     */
+    public static Claims validateToken(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(KEY) // Clave secreta para validar la firma
                 .build()
-                .parseClaimsJws(token)
-                .getBody();
-        return claims.getSubject();
+                .parseClaimsJws(token) // Validar y parsear el token
+                .getBody(); // Obtener las reclamaciones (claims)
     }
 }
