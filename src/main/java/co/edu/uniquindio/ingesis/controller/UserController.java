@@ -1,6 +1,8 @@
 package co.edu.uniquindio.ingesis.controller;
 
 import co.edu.uniquindio.ingesis.dto.UserRegistrationRequest;
+import co.edu.uniquindio.ingesis.dto.UserResponse;
+import co.edu.uniquindio.ingesis.mapper.UserMapper;
 import co.edu.uniquindio.ingesis.model.TokenResponse;
 import co.edu.uniquindio.ingesis.model.User;
 import co.edu.uniquindio.ingesis.model.UserLoginRequest;
@@ -45,6 +47,9 @@ public class UserController {
     @Inject
     UserService userService;
 
+    @Inject
+    UserMapper userMapper;
+
     @POST
     @Operation(summary = "Registra un nuevo usuario", description = "Crea un nuevo usuario en el sistema.")
     @APIResponse(responseCode = "201", description = "Usuario registrado exitosamente")
@@ -74,7 +79,7 @@ public class UserController {
                     )
             ) UserRegistrationRequest request) {
         try {
-            User registeredUser = userService.registerUser(request);
+            UserResponse registeredUser = userService.registerUser(request);
             return Response.status(Response.Status.CREATED).entity(registeredUser).build();
         } catch (IllegalArgumentException e) {
             return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
@@ -98,7 +103,7 @@ public class UserController {
             @QueryParam("limit") @DefaultValue("10") int limit,
             @QueryParam("email") String email) {
         try {
-            List<User> users = userService.getAllUsers(page, limit, email);
+            List<UserResponse> users = userService.getAllUsers(page, limit, email);
             if (users.isEmpty()) {
                 return Response.status(Response.Status.NOT_FOUND).entity("No hay usuarios registrados").build();
             }
@@ -118,7 +123,7 @@ public class UserController {
     public Response getUserById(
             @Parameter(description = "ID del usuario a consultar") @PathParam("id") Long id) {
         try {
-            User user = userService.getUserById(id);
+            UserResponse user = userService.getUserById(id);
             if (user == null) {
                 return Response.status(Response.Status.NOT_FOUND).entity("Usuario no encontrado").build();
             }
@@ -136,11 +141,9 @@ public class UserController {
     @APIResponse(responseCode = "400", description = "Datos incompletos o formato inválido")
     @APIResponse(responseCode = "404", description = "Usuario no encontrado")
     @APIResponse(responseCode = "500", description = "Error en el servidor")
-    public Response updateUser(
-            @PathParam("id") Long id,
-            @Valid User user) { // Usa @Valid para validar automáticamente el objeto User
+    public Response updateUser(@PathParam("id") Long id, @Valid UserRegistrationRequest request) {
         try {
-            User updatedUser = userService.updateUser(id, user);
+            UserResponse updatedUser = userService.updateUser(id, userMapper.toEntity(request));
             if (updatedUser == null) {
                 return Response.status(Response.Status.NOT_FOUND).entity("Usuario no encontrado").build();
             }
@@ -160,11 +163,9 @@ public class UserController {
     @APIResponse(responseCode = "400", description = "Datos incompletos o formato inválido")
     @APIResponse(responseCode = "404", description = "Usuario no encontrado")
     @APIResponse(responseCode = "500", description = "Error en el servidor")
-    public Response partialUpdateUser(
-            @PathParam("id") Long id,
-            User user) {
+    public Response partialUpdateUser(@PathParam("id") Long id, UserRegistrationRequest request) {
         try {
-            User updatedUser = userService.partialUpdateUser(id, user);
+            UserResponse updatedUser = userService.partialUpdateUser(id, userMapper.toEntity(request));
             if (updatedUser == null) {
                 return Response.status(Response.Status.NOT_FOUND).entity("Usuario no encontrado").build();
             }
