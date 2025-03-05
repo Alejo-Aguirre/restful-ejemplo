@@ -97,6 +97,19 @@
             <version>1.18.30</version>
             <scope>provided</scope>
         </dependency>
+
+        <!-- Quarkus Panache con Hibernate -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-hibernate-orm-panache</artifactId>
+        </dependency>
+
+        <!-- Driver para MySQL -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jdbc-mysql</artifactId>
+        </dependency>
+
     </dependencies>
 
     <build>

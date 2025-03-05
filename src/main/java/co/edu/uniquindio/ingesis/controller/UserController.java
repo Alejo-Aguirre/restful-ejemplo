@@ -39,7 +39,7 @@ import java.util.List;
 @Path("/usuarios")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-@Tag(name = "Gestión de Usuarios", description = "API para gestionar usuarios, incluyendo registro, login, actualización completa y parcial, eliminación y inicio de sesión para seguridad.")
+@Tag(name = "Gestión de Usuarios", description = "API para gestionar usuarios, incluyendo registro, login, actualización completa y parcial, eliminación e inicio de sesión para seguridad.")
 public class UserController {
 
     @Inject
@@ -66,7 +66,7 @@ public class UserController {
                                         {
                                             "email": "usuario@example.com",
                                             "clave": "Password123",
-                                            "nombreUsuario": "usuarioEjemplo",
+                                            "usuario": "usuarioEjemplo",
                                             "rol": "ADMIN"
                                         }
                                         """
@@ -79,7 +79,10 @@ public class UserController {
         } catch (IllegalArgumentException e) {
             return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
         } catch (Exception e) {
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Error en el servidor").build();
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("{\"error\": \"Error en el servidor: " + e.getMessage() + "\" }")
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
         }
     }
 
@@ -113,7 +116,7 @@ public class UserController {
     @APIResponse(responseCode = "404", description = "Usuario no encontrado")
     @APIResponse(responseCode = "500", description = "Error en el servidor")
     public Response getUserById(
-            @Parameter(description = "ID del usuario a consultar") @PathParam("id") int id) {
+            @Parameter(description = "ID del usuario a consultar") @PathParam("id") Long id) {
         try {
             User user = userService.getUserById(id);
             if (user == null) {
@@ -134,7 +137,7 @@ public class UserController {
     @APIResponse(responseCode = "404", description = "Usuario no encontrado")
     @APIResponse(responseCode = "500", description = "Error en el servidor")
     public Response updateUser(
-            @PathParam("id") int id,
+            @PathParam("id") Long id,
             @Valid User user) { // Usa @Valid para validar automáticamente el objeto User
         try {
             User updatedUser = userService.updateUser(id, user);
@@ -158,7 +161,7 @@ public class UserController {
     @APIResponse(responseCode = "404", description = "Usuario no encontrado")
     @APIResponse(responseCode = "500", description = "Error en el servidor")
     public Response partialUpdateUser(
-            @PathParam("id") int id,
+            @PathParam("id") Long id,
             User user) {
         try {
             User updatedUser = userService.partialUpdateUser(id, user);
@@ -180,7 +183,7 @@ public class UserController {
     @APIResponse(responseCode = "204", description = "Usuario eliminado exitosamente")
     @APIResponse(responseCode = "404", description = "Usuario no encontrado")
     @APIResponse(responseCode = "500", description = "Error en el servidor")
-    public Response deleteUser(@PathParam("id") int id) {
+    public Response deleteUser(@PathParam("id") Long id) {
         try {
             boolean deleted = userService.deleteUser(id);
             if (!deleted) {

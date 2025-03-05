@@ -25,7 +25,7 @@ public class JWTAuthFilter implements ContainerRequestFilter {
 
         // Permitir acceso sin autenticación a /usuarios (registro) y /usuarios/login (login)
         if (("usuarios".equals(firstSegment) && "POST".equals(method)) ||
-                ("usuarios".equals(firstSegment) && "login".equals(secondSegment) && "POST".equals(method))) {
+                ("usuarios".equals(firstSegment) && "login".equals(secondSegment))) {
             return; // No aplicar filtro de autenticación
         }
 
